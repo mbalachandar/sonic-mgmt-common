@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
-//  Copyright 2019 Broadcom. The term Broadcom refers to Broadcom Inc. and/or //
+//  Copyright 2021 Broadcom. The term Broadcom refers to Broadcom Inc. and/or //
 //  its subsidiaries.                                                         //
 //                                                                            //
 //  Licensed under the Apache License, Version 2.0 (the "License");           //
@@ -17,6 +17,43 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-package ocbinds
+package utils
 
-//go:generate sh -c "$GO run -mod=vendor ../../vendor/github.com/openconfig/ygot/generator/generator.go -generate_fakeroot -output_file ocbinds.go -package_name ocbinds -generate_fakeroot -fakeroot_name=device -compress_paths=false -exclude_modules ietf-interfaces -path . $(find ../../models/yang -name '*.yang' -not -name '*annot.yang')"
+import "fmt"
+
+// Bits is a set of 8 bit flags.
+type Bits uint8
+
+// Set operations sets given bit flags into b
+func (b *Bits) Set(flags Bits) {
+	*b |= flags
+}
+
+// Unset operations clears given bit flags from b
+func (b *Bits) Unset(flags Bits) {
+	*b &^= flags
+}
+
+// Reset operations clears all bits from b
+func (b *Bits) Reset() {
+	*b = 0
+}
+
+// Empty returns true if no bits are set in b
+func (b Bits) Empty() bool {
+	return b != 0
+}
+
+// Has returns true if all flags are present in b
+func (b Bits) Has(flags Bits) bool {
+	return (b & flags) == flags
+}
+
+// HasAny returns true if any of the flags is present in b
+func (b Bits) HasAny(flags Bits) bool {
+	return (b & flags) != 0
+}
+
+func (b Bits) String() string {
+	return fmt.Sprintf("%08b", b)
+}
