@@ -33,7 +33,7 @@ stages:
       vmImage: ubuntu-20.04
 
     container:
-      image: sonicdev-microsoft.azurecr.io:443/sonic-slave-bullseye:latest
+      image: sonicdev-microsoft.azurecr.io:443/sonic-slave-bookworm:latest
 
     steps:
     - checkout: self
@@ -50,8 +50,8 @@ stages:
         runVersion: 'latestFromBranch'
         runBranch: 'refs/heads/$(BUILD_BRANCH)'
         patterns: |
-            target/debs/bullseye/libyang*.deb
-            target/python-wheels/bullseye/sonic_yang_models*.whl
+            target/debs/bookworm/libyang*.deb
+            target/python-wheels/bookworm/sonic_yang_models*.whl
       displayName: "Download sonic buildimage"
 
     - script: |
@@ -64,11 +64,11 @@ stages:
         sudo service redis-server start
 
         # LIBYANG
-        sudo dpkg -i ../target/debs/bullseye/libyang*1.0.73*.deb
+        sudo dpkg -i ../target/debs/bookworm/libyang*1.0.73*.deb
       displayName: "Install dependency"
 
     - script: |
-        sudo pip3 install ../target/python-wheels/bullseye/sonic_yang_models-1.0-py3-none-any.whl
+        sudo pip3 install ../target/python-wheels/bookworm/sonic_yang_models-1.0-py3-none-any.whl
       displayName: "Install sonic yangs"
 
     - script: |
@@ -90,8 +90,10 @@ stages:
         STATUS=0
         DEBDIR=$(realpath debian/sonic-mgmt-common)
 
-        [[ -f tools/test/database_config.json ]] && \
-            export DB_CONFIG_PATH=${PWD}/tools/test/database_config.json
+        # Update unixsocket path in database_config.json
+        tools/test/dbconfig.py -o build/tests/database_config.json
+        export DB_CONFIG_PATH=${PWD}/build/tests/database_config.json
+
         # Run CVL tests
 
         pushd build/tests/cvl
@@ -100,6 +102,10 @@ stages:
             ./cvl.test -test.v -logtostderr || STATUS=1
 
         popd
+
+        # Populates test data in essential tables like PORT, DEVICE_METADATA, SWITCH_TABLE, USER_TABLE etc.
+
+        tools/test/dbinit.py --overwrite
 
         # Run translib tests
 
